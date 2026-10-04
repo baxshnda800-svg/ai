@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio — دروستکردنی ڤیدیۆ بە AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --accent:#4f8cff; --bg:#0b0e13; --panel:#131821; --panel2:#1a212d; --line:#273041; --text:#eef2f8; --muted:#8c98ad; --danger:#ff6b6b; --ok:#3ddc97; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Noto Sans Arabic",Tahoma,system-ui,sans-serif;line-height:1.7;
+    background-image:radial-gradient(900px 340px at 50% -120px,color-mix(in srgb,var(--accent) 22%,transparent),transparent)}
+  main{max-width:720px;margin:0 auto;padding:28px 16px 70px}
+  header h1{font-size:1.7rem;font-weight:800;margin:0}
+  header p{margin:4px 0 22px;color:var(--muted)}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px}
+  h2{font-size:.95rem;margin:0 0 12px;font-weight:600}
+  .models{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .model{--c:#fff;text-align:start;background:var(--panel2);border:1.5px solid var(--line);border-radius:12px;padding:12px;color:var(--text);cursor:pointer;font:inherit;transition:border-color .15s,transform .15s}
+  .model:hover{border-color:var(--c)}
+  .model[aria-checked=true]{border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,var(--panel2))}
+  .model b{display:flex;align-items:center;gap:8px;font-size:.92rem}
+  .model b::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+  .model span{display:block;font-size:.76rem;color:var(--muted);margin-top:2px}
+  .group{margin-bottom:14px}
+  .group>label,.lbl{display:block;font-size:.82rem;color:var(--muted);margin-bottom:6px}
+  .seg{display:flex;flex-wrap:wrap;gap:6px}
+  .seg button{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:7px 14px;font:inherit;font-size:.88rem;cursor:pointer}
+  .seg button[aria-checked=true]{background:var(--accent);border-color:var(--accent);color:#07090d;font-weight:600}
+  .seg button:disabled{opacity:.6;cursor:default}
+  .note{font-size:.8rem;color:var(--muted);margin:2px 0 0}
+  textarea,input[type=password],input[type=text]{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit}
+  textarea{min-height:110px;resize:vertical}
+  textarea:focus,input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .meta{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-top:4px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chips button{background:transparent;border:1px dashed var(--line);color:var(--muted);border-radius:99px;padding:3px 12px;font:inherit;font-size:.78rem;cursor:pointer}
+  .chips button:hover{color:var(--text);border-color:var(--accent)}
+  .keyrow{display:flex;gap:8px}
+  .keyrow button{flex:none;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:0 14px;font:inherit;cursor:pointer}
+  .check{display:flex;gap:8px;align-items:center;font-size:.82rem;color:var(--muted);margin-top:8px}
+  .actions{display:grid;grid-template-columns:1fr auto;gap:10px}
+  #go{background:var(--accent);color:#07090d;border:0;border-radius:12px;padding:15px;font:inherit;font-weight:800;font-size:1.02rem;cursor:pointer}
+  #go:disabled{opacity:.55;cursor:not-allowed}
+  #cancel{background:transparent;border:1px solid var(--line);color:var(--text);border-radius:12px;padding:0 20px;font:inherit;cursor:pointer}
+  #cancel:disabled{display:none}
+  .progress{display:none;margin-top:14px}
+  .progress.on{display:block}
+  .bar{height:5px;background:var(--panel2);border-radius:9px;overflow:hidden}
+  .bar i{display:block;height:100%;width:35%;background:var(--accent);border-radius:9px;animation:slide 1.4s ease-in-out infinite}
+  @keyframes slide{0%{margin-inline-start:-35%}100%{margin-inline-start:100%}}
+  @media (prefers-reduced-motion:reduce){.bar i{animation:none;width:100%;opacity:.5}}
+  #status{margin:10px 0 0;font-size:.88rem;color:var(--muted);min-height:1.6em}
+  #status.err{color:var(--danger)} #status.ok{color:var(--ok)}
+  .result{display:none;margin-top:16px}
+  .result.on{display:block}
+  video{width:100%;border-radius:12px;background:#000;display:block}
+  .result a{display:inline-block;margin-top:10px;color:var(--accent);text-decoration:none;font-weight:600}
+  .hist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .hist button{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px;color:var(--text);font:inherit;cursor:pointer;text-align:start}
+  .hist video{aspect-ratio:16/9;object-fit:cover;pointer-events:none}
+  .hist small{display:block;margin-top:6px;font-size:.74rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  footer{font-size:.76rem;color:var(--muted);text-align:center;margin-top:20px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Studio</h1>
+    <p>ڤیدیۆ لە نووسینەوە دروست بکە، بە چەند مۆدێلی AI.</p>
+  </header>
+
+  <section>
+    <h2>مۆدێل</h2>
+    <div class="models" id="models" role="radiogroup" aria-label="مۆدێل"></div>
+  </section>
+
+  <section>
+    <h2>ڕێکخستن</h2>
+    <div id="fields"></div>
+    <p class="note" id="modelNote"></p>
+  </section>
+
+  <section>
+    <h2>فەرمان</h2>
+    <textarea id="prompt" maxlength="1500" placeholder="وەسفی دیمەنەکە بنووسە، باشترە بە ئینگلیزی بێت..."></textarea>
+    <div class="meta"><span id="count">0 / 1500</span><span>Ctrl + Enter بۆ دروستکردن</span></div>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <section>
+    <label class="lbl" for="apiKey">API Keyی Fal.ai</label>
+    <div class="keyrow">
+      <input type="password" id="apiKey" placeholder="key_id:key_secret" autocomplete="off" spellcheck="false">
+      <button type="button" id="toggleKey">پیشاندان</button>
+    </div>
+    <label class="check"><input type="checkbox" id="remember"> لەسەر ئەم ئامێرە بیپارێزە</label>
+  </section>
+
+  <div class="actions">
+    <button id="go" type="button">دروستکردنی ڤیدیۆ</button>
+    <button id="cancel" type="button" disabled>وەستاندن</button>
+  </div>
+
+  <div class="progress" id="progress"><div class="bar"><i></i></div></div>
+  <p id="status" role="status" aria-live="polite"></p>
+
+  <div class="result" id="result">
+    <video id="player" controls playsinline></video>
+    <a id="download" target="_blank" rel="noopener" download>داگرتنی ڤیدیۆ</a>
+  </div>
+
+  <section id="histBox" style="display:none;margin-top:18px">
+    <h2>ڤیدیۆکانی پێشوو</h2>
+    <div class="hist" id="hist"></div>
+  </section>
+
+  <footer>API Key تەنها لە browserی خۆتدا دەمێنێتەوە. ئەم پەڕەیە بۆ بەکارهێنانی تایبەتییە.</footer>
+</main>
+
+<script>
+(() => {
+  const AR = ["16:9","9:16","1:1"];
+  // d: durations, sfx: suffix sent with duration, r: resolutions, a: aspects, audio: has sound toggle
+  const MODELS = [
+    {id:"fal-ai/veo3", name:"Veo 3", tag:"Google · کوالێتی بەرز + دەنگ", color:"#4f8cff", d:[8], sfx:"s", a:["16:9","9:16"], r:["720p","1080p"], audio:true, note:"Veo 3 تەنها 8 چرکە دروست دەکات و دەتوانێت دەنگیش زیاد بکات."},
+    {id:"fal-ai/veo3/fast", name:"Veo 3 Fast", tag:"Google · خێراتر", color:"#2ec4e6", d:[8], sfx:"s", a:["16:9","9:16"], r:["720p","1080p"], audio:true, note:"وەک Veo 3 بەڵام خێراتر و هەرزانتر."},
+    {id:"fal-ai/veo2", name:"Veo 2", tag:"Google · بێ دەنگ", color:"#8b7bff", d:[5,6,7,8], sfx:"s", a:["16:9","9:16"], note:"Veo 2 لە 5 تا 8 چرکە پشتگیری دەکات."},
+    {id:"fal-ai/kling-video/v2.1/master/text-to-video", name:"Kling 2.1 Master", tag:"Kling · جوڵەی سروشتی", color:"#ff8a3d", d:[5,10], sfx:"", a:AR, note:"Kling 2.1 جوڵەی باش دروست دەکات؛ 5 یان 10 چرکە."},
+    {id:"fal-ai/kling-video/v1.5/pro/text-to-video", name:"Kling 1.5 Pro", tag:"Kling · هەرزانتر", color:"#ffb52e", d:[5,10], sfx:"", a:AR, note:"وەشانی کۆنتر و هەرزانتری Kling."},
+    {id:"fal-ai/bytedance/seedance/v1/pro/text-to-video", name:"Seedance Pro", tag:"ByteDance · 1080p", color:"#ff5fa2", d:[5,8,10,12], sfx:"", a:["16:9","9:16","1:1","4:3","3:4"], r:["480p","720p","1080p"], note:"Seedance Pro لە 5 تا 12 چرکە و تا 1080p."},
+    {id:"fal-ai/bytedance/seedance/v1/lite/text-to-video", name:"Seedance Lite", tag:"ByteDance · خێرا", color:"#c565ff", d:[5,8,10], sfx:"", a:["16:9","9:16","1:1","4:3","3:4"], r:["480p","720p","1080p"], note:"وەشانی سووک و خێرا."},
+    {id:"fal-ai/minimax/video-01", name:"Minimax", tag:"Hailuo · سادە", color:"#3ddc97", d:[6], sfx:"", a:["16:9"], note:"Minimax ماوە و قەبارە هەڵناگرێت؛ تەنها فەرمان."}
+  ];
+  const EXAMPLES = [
+    "A cinematic aerial shot of snowy mountains near Shaqlawa at sunrise, slow drone movement",
+    "A busy old bazaar in Erbil at golden hour, handheld camera, warm light",
+    "A calm river flowing through green hills, soft fog, 4K nature documentary"
+  ];
+
+  const $ = id => document.getElementById(id);
+  const el = {models:$("models"), fields:$("fields"), note:$("modelNote"), prompt:$("prompt"), count:$("count"), chips:$("chips"),
+    key:$("apiKey"), toggle:$("toggleKey"), remember:$("remember"), go:$("go"), cancel:$("cancel"), prog:$("progress"),
+    status:$("status"), result:$("result"), player:$("player"), dl:$("download"), histBox:$("histBox"), hist:$("hist")};
+
+  const state = {m:MODELS[0], d:null, a:null, r:null, audio:true};
+  let controller = null, timer = null, history = [];
+
+  // ---------- UI builders ----------
+  function seg(parent, labelText, options, current, onPick, fmt) {
+    const g = document.createElement("div"); g.className = "group";
+    const l = document.createElement("label"); l.textContent = labelText; g.appendChild(l);
+    const s = document.createElement("div"); s.className = "seg"; s.setAttribute("role","radiogroup");
+    options.forEach(v => {
+      const b = document.createElement("button"); b.type = "button";
+      b.setAttribute("role","radio"); b.textContent = fmt ? fmt(v) : v;
+      b.setAttribute("aria-checked", String(v === current));
+      b.disabled = options.length === 1;
+      b.onclick = () => { onPick(v); [...s.children].forEach(c => c.setAttribute("aria-checked", String(c === b))); };
+      s.appendChild(b);
+    });
+    g.appendChild(s); parent.appendChild(g);
+  }
+
+  function renderModels() {
+    el.models.innerHTML = "";
+    MODELS.forEach(m => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "model";
+      b.style.setProperty("--c", m.color); b.setAttribute("role","radio");
+      b.setAttribute("aria-checked", String(m === state.m));
+      const n = document.createElement("b"); n.textContent = m.name;
+      const t = document.createElement("span"); t.textContent = m.tag;
+      b.append(n, t); b.onclick = () => pickModel(m); el.models.appendChild(b);
+    });
+  }
+
+  function pickModel(m) {
+    state.m = m;
+    state.d = m.d[Math.min(1, m.d.length - 1)] === undefined ? m.d[0] : (m.d.includes(5) ? 5 : m.d[0]);
+    state.a = m.a[0]; state.r = m.r ? (m.r.includes("720p") ? "720p" : m.r[0]) : null;
+    document.documentElement.style.setProperty("--accent", m.color);
+    renderModels(); renderFields(); el.note.textContent = m.note;
+  }
+
+  function renderFields() {
+    const m = state.m; el.fields.innerHTML = "";
+    seg(el.fields, "ماوە", m.d, state.d, v => state.d = v, v => v + " چرکە");
+    seg(el.fields, "قەبارەی ڤیدیۆ", m.a, state.a, v => state.a = v);
+    if (m.r) seg(el.fields, "کوالێتی", m.r, state.r, v => state.r = v);
+    if (m.audio) seg(el.fields, "دەنگ", [true,false], state.audio, v => state.audio = v, v => v ? "بە دەنگ" : "بێ دەنگ");
+  }
+
+  function buildBody(prompt) {
+    const m = state.m, body = {prompt};
+    if (m.id.endsWith("minimax/video-01")) return body;
+    body.duration = String(state.d) + m.sfx;
+    body.aspect_ratio = state.a;
+    if (m.r) body.resolution = state.r;
+    if (m.audio) body.generate_audio = state.audio;
+    return body;
+  }
+
+  // ---------- helpers ----------
+  function setStatus(t, k = "") { el.status.textContent = t; el.status.className = k; }
+  function fmtTime(s) { return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0"); }
+
+  function humanError(e) {
+    const s = e.status;
+    if (s === 401) return "API Key هەڵەیە. دووبارە بیپشکنە.";
+    if (s === 402 || (s === 403 && /balance|exhausted|locked/i.test(e.message))) return "باڵانسی Fal.ai تەواو بووە. باڵانس زیاد بکە.";
+    if (s === 403) return "ڕێگەپێدان نییە. Key یان ئەکاونتەکەت بپشکنە.";
+    if (s === 422) return "فەرمانەکە یان ڕێکخستنەکان قبوڵ نەکران (ڕەنگە ناوەڕۆکەکە ڕێگەپێنەدراو بێت). گۆڕانکاری بکە و دووبارە هەوڵ بدە.";
+    if (s === 429) return "زۆر داواکاری نێردراوە. کەمێک چاوەڕێ بکە.";
+    if (e.name === "TypeError") return "پەیوەندی ئینتەرنێت نییە یان بەربەست هەیە.";
+    return e.message || "هەڵەیەکی نەزانراو ڕوویدا.";
+  }
+
+  async function fal(url, opts, signal) {
+    const res = await fetch(url, {...opts, signal, headers: {"Authorization":"Key " + el.key.value.trim(), "Content-Type":"application/json"}});
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const d = data.detail;
+      const err = new Error(typeof d === "string" ? d : (d ? JSON.stringify(d) : "HTTP " + res.status));
+      err.status = res.status; throw err;
+    }
+    return data;
+  }
+  const sleep = (ms, sig) => new Promise((ok, no) => {
+    const t = setTimeout(ok, ms);
+    sig.addEventListener("abort", () => { clearTimeout(t); no(new DOMException("Aborted","AbortError")); }, {once:true});
+  });
+
+  function showVideo(url) {
+    el.player.src = url; el.dl.href = url; el.result.classList.add("on"); el.player.load();
+  }
+  function renderHistory() {
+    el.histBox.style.display = history.length ? "block" : "none"; el.hist.innerHTML = "";
+    history.forEach(h => {
+      const b = document.createElement("button"); b.type = "button";
+      const v = document.createElement("video"); v.src = h.url; v.muted = true; v.preload = "metadata";
+      const s = document.createElement("small"); s.textContent = h.model + " · " + h.prompt;
+      b.append(v, s); b.onclick = () => { showVideo(h.url); window.scrollTo({top:0, behavior:"smooth"}); };
+      el.hist.appendChild(b);
+    });
+  }
+
+  // ---------- generate ----------
+  async function generate() {
+    const prompt = el.prompt.value.trim(), key = el.key.value.trim();
+    if (!key) { setStatus("تکایە API Key بنووسە.", "err"); el.key.focus(); return; }
+    if (prompt.length < 5) { setStatus("فەرمانێکی درێژتر بنووسە (لانیکەم 5 پیت).", "err"); el.prompt.focus(); return; }
+    try { el.remember.checked ? localStorage.setItem("fal_key", key) : localStorage.removeItem("fal_key"); } catch (_) {}
+
+    controller = new AbortController(); const sig = controller.signal;
+    el.go.disabled = true; el.cancel.disabled = false; el.prog.classList.add("on"); el.result.classList.remove("on");
+    const t0 = Date.now(); let phase = "ناردنی داواکاری";
+    const tick = () => setStatus(phase + " — " + fmtTime(Math.round((Date.now() - t0)/1000)));
+    tick(); timer = setInterval(tick, 1000);
+
+    try {
+      const job = await fal("https://queue.fal.run/" + state.m.id, {method:"POST", body: JSON.stringify(buildBody(prompt))}, sig);
+      let fails = 0;
+      for (;;) {
+        await sleep(4000, sig);
+        if (Date.now() - t0 > 15*60*1000) throw new Error("زۆر کاتی خایاند (15 خولەک). دواتر دووبارە هەوڵ بدەرەوە.");
+        try {
+          const st = await fal(job.status_url, {method:"GET"}, sig); fails = 0;
+          if (st.status === "COMPLETED") break;
+          phase = st.status === "IN_QUEUE" ? "لە ڕیزدایە" + (typeof st.queue_position === "number" ? " (ژمارە " + st.queue_position + ")" : "") : "ڤیدیۆ دروست دەکرێت";
+        } catch (e) {
+          if (e.name === "AbortError" || (e.status && e.status < 500 && e.status !== 429)) throw e;
+          if (++fails >= 4) throw e; phase = "دووبارە هەوڵ دەدرێتەوە";
+        }
+      }
+      phase = "هێنانی ڤیدیۆ";
+      const out = await fal(job.response_url, {method:"GET"}, sig);
+      const url = out.video && out.video.url;
+      if (!url) throw new Error("ڤیدیۆ لە وەڵامەکەدا نەبوو.");
+      showVideo(url);
+      history.unshift({url, prompt, model: state.m.name}); history = history.slice(0, 8); renderHistory();
+      setStatus("ڤیدیۆکە ئامادەیە (" + fmtTime(Math.round((Date.now() - t0)/1000)) + ")", "ok");
+    } catch (e) {
+      if (e.name === "AbortError") setStatus("وەستێندرا.");
+      else { setStatus(humanError(e), "err"); console.error(e); }
+    } finally {
+      clearInterval(timer); controller = null;
+      el.go.disabled = false; el.cancel.disabled = true; el.prog.classList.remove("on");
+    }
+  }
+
+  // ---------- init ----------
+  EXAMPLES.forEach(t => {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = t.split(",")[0];
+    b.onclick = () => { el.prompt.value = t; el.prompt.dispatchEvent(new Event("input")); el.prompt.focus(); };
+    el.chips.appendChild(b);
+  });
+  el.prompt.addEventListener("input", () => el.count.textContent = el.prompt.value.length + " / 1500");
+  el.prompt.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") generate(); });
+  el.toggle.onclick = () => { const h = el.key.type === "password"; el.key.type = h ? "text" : "password"; el.toggle.textContent = h ? "شاردنەوە" : "پیشاندان"; };
+  el.go.onclick = generate;
+  el.cancel.onclick = () => controller && controller.abort();
+  try { const k = localStorage.getItem("fal_key"); if (k) { el.key.value = k; el.remember.checked = true; } } catch (_) {}
+  pickModel(MODELS[0]);
+})();
+</script>
+</body>
+</html>
